@@ -67,6 +67,3 @@ eas build --profile development --platform android --local
 # Üretime (Production) hazır APK almak:
 eas build --profile production --platform android --local
 
-📄 Lisans
-
-Bu proje MIT Lisansı altında korunmaktadır.
