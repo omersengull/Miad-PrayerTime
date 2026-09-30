@@ -2,7 +2,19 @@
 
 Modern, minimalist ve "Offline-First" (internetsiz çalışabilen) mimariyle tasarlanmış, **React Native & Expo** tabanlı yeni nesil İslami yaşam ve namaz vakti uygulaması. Apple standartlarında **Glassmorphism (Cam Efekti)** arayüzü ile kullanıcıya huzurlu ve akıcı bir deneyim sunar.
 
-![Miad Prayer Time Banner](https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?auto=format&fit=crop&q=80&w=1080)
+## 📱 Ekran Görüntüleri
+
+<p align="center">
+  <img src="assets/screenshots/screen-1.png" width="24%" />
+  <img src="assets/screenshots/screen-2.png" width="24%" />
+  <img src="assets/screenshots/screen-3.png" width="24%" />
+  <img src="assets/screenshots/screen-4.png" width="24%" />
+</p>
+<p align="center">
+  <img src="assets/screenshots/screen-5.png" width="24%" />
+  <img src="assets/screenshots/screen-6.png" width="24%" />
+  <img src="assets/screenshots/screen-7.png" width="24%" />
+</p>
 
 ## 📥 İndir ve Kur (Kullanıcılar İçin)
 Uygulamanın en güncel Android (APK) sürümünü indirmek için sağ taraftaki **Releases** bölümüne gidebilir veya [Buraya Tıklayarak İndirebilirsiniz](#).
@@ -66,4 +78,3 @@ eas build --profile development --platform android --local
 
 # Üretime (Production) hazır APK almak:
 eas build --profile production --platform android --local
-
