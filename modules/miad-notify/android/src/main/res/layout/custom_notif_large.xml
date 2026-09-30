@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <!-- ÜST BİLGİ -->
+    <LinearLayout 
+    android:layout_width="match_parent" 
+    android:layout_height="wrap_content" 
+    android:orientation="horizontal" 
+    android:gravity="center_vertical">
+
+    <TextView 
+        android:id="@+id/title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#ffffff" 
+        android:textSize="13sp" 
+        android:textStyle="bold" 
+        android:singleLine="true"/>
+
+    <Chronometer 
+        android:id="@+id/chronometer" 
+        android:layout_width="wrap_content" 
+        android:layout_height="wrap_content" 
+        android:layout_marginStart="8dp"
+        android:textColor="#fbbf24" 
+        android:textSize="15sp" 
+        android:textStyle="bold" 
+        android:countDown="true" />
+</LinearLayout>
+
+    <!-- 6'LI VAKİT TABLOSU -->
+    <LinearLayout 
+        android:layout_width="match_parent" 
+        android:layout_height="wrap_content" 
+        android:layout_marginTop="10dp" 
+        android:orientation="horizontal" 
+        android:weightSum="6" 
+        android:baselineAligned="false">
+        
+        <!-- İMSAK -->
+        <LinearLayout 
+            android:id="@+id/bg_imsak" 
+            android:layout_width="0dp" 
+            android:layout_height="wrap_content" 
+            android:layout_weight="1" 
+            android:orientation="vertical" 
+            android:gravity="center" 
+            android:paddingVertical="6dp">
+            <TextView 
+                android:id="@+id/title_imsak" 
+                android:layout_width="wrap_content" 
+                android:layout_height="wrap_content" 
+                android:text="İMSAK" 
+                android:textColor="#94a3b8" 
+                android:textSize="10sp" 
+                android:textStyle="bold" 
+                android:singleLine="true"/>
+            <TextView 
+                android:id="@+id/time_imsak" 
+                android:layout_width="wrap_content" 
+                android:layout_height="wrap_content" 
+                android:layout_marginTop="4dp"
+                android:text="--:--" 
+                android:textColor="#ffffff" 
+                android:textSize="12sp" 
+                android:textStyle="bold" 
+                android:singleLine="true"/>
+        </LinearLayout>
+
+        <!-- GÜNEŞ -->
+        <LinearLayout 
+            android:id="@+id/bg_gunes" 
+            android:layout_width="0dp" 
+            android:layout_height="wrap_content" 
+            android:layout_weight="1" 
+            android:orientation="vertical" 
+            android:gravity="center" 
+            android:paddingVertical="6dp">
+            <TextView 
+                android:id="@+id/title_gunes" 
+                android:layout_width="wrap_content" 
+                android:layout_height="wrap_content" 
+                android:text="GÜNEŞ" 
+                android:textColor="#94a3b8" 
+                android:textSize="10sp" 
+                android:textStyle="bold" 
+                android:singleLine="true"/>
+            <TextView 
+                android:id="@+id/time_gunes" 
+                android:layout_width="wrap_content" 
+                android:layout_height="wrap_content" 
+                android:layout_marginTop="4dp"
+                android:text="--:--" 
+                android:textColor="#ffffff" 
+                android:textSize="12sp" 
+                android:textStyle="bold" 
+                android:singleLine="true"/>
+        </LinearLayout>
+
+        <!-- ÖĞLE -->
+        <LinearLayout 
+            android:id="@+id/bg_ogle" 
+            android:layout_width="0dp" 
+            android:layout_height="wrap_content" 
+            android:layout_weight="1" 
+            android:orientation="vertical" 
+            android:gravity="center" 
+            android:paddingVertical="6dp">
+            <TextView 
+                android:id="@+id/title_ogle" 
+                android:layout_width="wrap_content" 
+                android:layout_height="wrap_content" 
+                android:text="ÖĞLE" 
+                android:textColor="#94a3b8" 
+                android:textSize="10sp" 
+                android:textStyle="bold" 
+                android:singleLine="true"/>
+            <TextView 
+                android:id="@+id/time_ogle" 
+                android:layout_width="wrap_content" 
+                android:layout_height="wrap_content" 
+                android:layout_marginTop="4dp"
+                android:text="--:--" 
+                android:textColor="#ffffff" 
+                android:textSize="12sp" 
+                android:textStyle="bold" 
+                android:singleLine="true"/>
+        </LinearLayout>
+
+        <!-- İKİNDİ -->
+        <LinearLayout 
+            android:id="@+id/bg_ikindi" 
+            android:layout_width="0dp" 
+            android:layout_height="wrap_content" 
+            android:layout_weight="1" 
+            android:orientation="vertical" 
+            android:gravity="center" 
+            android:paddingVertical="6dp">
+            <TextView 
+                android:id="@+id/title_ikindi" 
+                android:layout_width="wrap_content" 
+                android:layout_height="wrap_content" 
+                android:text="İKİNDİ" 
+                android:textColor="#94a3b8" 
+                android:textSize="10sp" 
+                android:textStyle="bold" 
+                android:singleLine="true"/>
+            <TextView 
+                android:id="@+id/time_ikindi" 
+                android:layout_width="wrap_content" 
+                android:layout_height="wrap_content" 
+                android:layout_marginTop="4dp"
+                android:text="--:--" 
+                android:textColor="#ffffff" 
+                android:textSize="12sp" 
+                android:textStyle="bold" 
+                android:singleLine="true"/>
+        </LinearLayout>
+
+        <!-- AKŞAM -->
+        <LinearLayout 
+            android:id="@+id/bg_aksam" 
+            android:layout_width="0dp" 
+            android:layout_height="wrap_content" 
+            android:layout_weight="1" 
+            android:orientation="vertical" 
+            android:gravity="center" 
+            android:paddingVertical="6dp">
+            <TextView 
+                android:id="@+id/title_aksam" 
+                android:layout_width="wrap_content" 
+                android:layout_height="wrap_content" 
+                android:text="AKŞAM" 
+                android:textColor="#94a3b8" 
+                android:textSize="10sp" 
+                android:textStyle="bold" 
+                android:singleLine="true"/>
+            <TextView 
+                android:id="@+id/time_aksam" 
+                android:layout_width="wrap_content" 
+                android:layout_height="wrap_content" 
+                android:layout_marginTop="4dp"
+                android:text="--:--" 
+                android:textColor="#ffffff" 
+                android:textSize="12sp" 
+                android:textStyle="bold" 
+                android:singleLine="true"/>
+        </LinearLayout>
+
+        <!-- YATSI -->
+        <LinearLayout 
+            android:id="@+id/bg_yatsi" 
+            android:layout_width="0dp" 
+            android:layout_height="wrap_content" 
+            android:layout_weight="1" 
+            android:orientation="vertical" 
+            android:gravity="center" 
+            android:paddingVertical="6dp">
+            <TextView 
+                android:id="@+id/title_yatsi" 
+                android:layout_width="wrap_content" 
+                android:layout_height="wrap_content" 
+                android:text="YATSI" 
+                android:textColor="#94a3b8" 
+                android:textSize="10sp" 
+                android:textStyle="bold" 
+                android:singleLine="true"/>
+            <TextView 
+                android:id="@+id/time_yatsi" 
+                android:layout_width="wrap_content" 
+                android:layout_height="wrap_content" 
+                android:layout_marginTop="4dp"
+                android:text="--:--" 
+                android:textColor="#ffffff" 
+                android:textSize="12sp" 
+                android:textStyle="bold" 
+                android:singleLine="true"/>
+        </LinearLayout>
+
+    </LinearLayout>
+</LinearLayout>

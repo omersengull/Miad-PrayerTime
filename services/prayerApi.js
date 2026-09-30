@@ -1,39 +1,41 @@
 // services/prayerApi.js
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 export async function fetchMonthlyTimes(districtId = "9541") {
-  ("-----------------------------------------");
-  (`[TEST ADIM 1] Vakitler için istek atılıyor... İlçe ID: ${districtId}`);
+  const cacheKey = `prayer_cache_${districtId}`;
   
   try {
+    // 1. Önce taze veri için internete çıkmayı dene
     const response = await fetch(`https://ezanvakti.imsakiyem.com/api/prayer-times/${districtId}/monthly`, {
       headers: { Accept: 'application/json' }
     });
     
-    (`[TEST ADIM 2] API HTTP Yanıt Kodu: ${response.status}`);
-    
-    const rawText = await response.text();
-    (`[TEST ADIM 3] API'den Gelen Ham Veri (İlk 200 karakter):`, rawText.substring(0, 200));
+    if (response.ok) {
+      const result = await response.json();
+      const data = Array.isArray(result) ? result : (Array.isArray(result?.data) ? result.data : null);
 
-    if (!response.ok) {
-      ("[HATA] API 200 OK dönmedi!");
-      return null;
+      // Veri taze ve sağlamsa hem geri döndür hem de internetsiz anlar için HAFIZAYA KAYDET
+      if (data && data.length > 0) {
+        await AsyncStorage.setItem(cacheKey, JSON.stringify(data));
+        return data;
+      }
     }
-    
-    const result = JSON.parse(rawText);
-    const data = Array.isArray(result) ? result : (Array.isArray(result?.data) ? result.data : null);
-
-    (`[TEST ADIM 4] Ayrıştırılan Veri Uzunluğu: ${data ? data.length : 'Bozuk/Null'}`);
-
-    if (data && data.length > 0) {
-      (`[TEST ADIM 5] Örnek İlk Gün Verisi:`, JSON.stringify(data[0]));
-      return data;
-    }
-
-    ("[HATA] Veri dizisi boş geldi!");
-    return null;
   } catch (error) {
-    ("[SİSTEM HATASI] Fetch işlemi çöktü:", error.message);
-    return null;
+    console.log("İnternet bağlantısı yok, hafızadaki (Offline) veriler denenecek...");
   }
+
+  // 2. İNTERNET YOKSA VEYA API ÇÖKMÜŞSE: Hafızadaki veriyi kullan (Offline Mode)
+  try {
+    const cachedData = await AsyncStorage.getItem(cacheKey);
+    if (cachedData) {
+      return JSON.parse(cachedData);
+    }
+  } catch (e) {
+    console.log("Hafıza okuma hatası", e);
+  }
+
+  // Hem internet yoksa hem hafıza boşsa null döner
+  return null;
 }
 
 export async function fetchCities() {

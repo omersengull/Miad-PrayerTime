@@ -2,43 +2,38 @@
 import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import * as Location from 'expo-location';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // EKLENDİ
 import { fetchCities, fetchDistricts } from '../services/prayerApi';
 
 export const useAutoLocation = () => {
   const [location, setLocation] = useState({ id: '9541', name: 'İSTANBUL, Fatih' });
-  const [isLocating, setIsLocating] = useState(false);
+  const [isLocating, setIsLocating] = useState(true);
 
   const getId = (item) => item?.IlceID || item?.DistrictID || item?.Id || item?.id || item?.SehirID || item?.StateID || item?._id;
   const getName = (item) => item?.IlceAdi || item?.SehirAdi || item?.name_tr || item?.name || item?.Name || item?.DistrictName || item?.StateName;
 
   const normalize = (text) => {
     if (!text) return "";
-    return text.toString()
-      .replace(/İ/g, "i").replace(/I/g, "i").replace(/ı/g, "i")
-      .replace(/Ş/g, "s").replace(/ş/g, "s")
-      .replace(/Ç/g, "c").replace(/ç/g, "c")
-      .replace(/Ğ/g, "g").replace(/ğ/g, "g")
-      .replace(/Ö/g, "o").replace(/ö/g, "o")
-      .replace(/Ü/g, "u").replace(/ü/g, "u")
-      .replace(/province/gi, "").replace(/merkez/gi, "").replace(/town/gi, "")
-      .toLowerCase()
-      .trim();
+    return text.toString().replace(/İ/g, "i").replace(/I/g, "i").replace(/ı/g, "i").replace(/Ş/g, "s").replace(/ş/g, "s").replace(/Ç/g, "c").replace(/ç/g, "c").replace(/Ğ/g, "g").replace(/ğ/g, "g").replace(/Ö/g, "o").replace(/ö/g, "o").replace(/Ü/g, "u").replace(/ü/g, "u").replace(/province/gi, "").replace(/merkez/gi, "").replace(/town/gi, "").toLowerCase().trim();
   };
 
   const findMyLocation = async (showMessage = false) => {
     try {
-      setIsLocating(true);
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (showMessage) setIsLocating(true); // Sadece butona basıldıysa loading göster
       
+      const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         if (showMessage) Alert.alert("Hata", "Konum izni vermeniz gerekiyor.");
         setIsLocating(false); return; 
       }
 
-     const currentPos = await Location.getCurrentPositionAsync({
-  accuracy: Location.Accuracy.Highest, // Uydu GPS'ini zorlar
-  maximumAge: 10000 // Son 10 saniyeden eski önbellek verisini kabul etmez
-});
+      // HIZLANDIRMA: Önce saniyesinde yanıt veren "Son bilinen konumu" iste
+      let currentPos = await Location.getLastKnownPositionAsync({});
+      if (!currentPos) {
+        // Eğer o yoksa düşük hassasiyette (hızlı) güncel konumu iste
+        currentPos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low });
+      }
+
       const geocodeResult = await Location.reverseGeocodeAsync({
         latitude: currentPos.coords.latitude,
         longitude: currentPos.coords.longitude
@@ -47,8 +42,6 @@ export const useAutoLocation = () => {
       if (geocodeResult && geocodeResult.length > 0) {
         const place = geocodeResult[0];
         const detectedCity = place.region || place.adminArea || place.city;
-        
-        // Android için tüm olası ilçe verilerini birleştirip arayacağız
         const possibleDistricts = [place.subregion, place.district, place.city, place.street].filter(Boolean);
 
         if (detectedCity) {
@@ -60,15 +53,13 @@ export const useAutoLocation = () => {
             const districts = await fetchDistricts(cityId);
             
             let matchedDistrict = null;
-
-            // Bulduğumuz adres parçalarının hepsini API ilçeleriyle tek tek kıyasla
             for (let possibleDist of possibleDistricts) {
               const pDistNorm = normalize(possibleDist);
               matchedDistrict = districts.find(d => {
                 const dNorm = normalize(getName(d));
                 return dNorm === pDistNorm || pDistNorm.includes(dNorm) || dNorm.includes(pDistNorm);
               });
-              if (matchedDistrict) break; // Bulduysa aramayı kes
+              if (matchedDistrict) break; 
             }
 
             if (!matchedDistrict && districts.length > 0) {
@@ -77,11 +68,14 @@ export const useAutoLocation = () => {
 
             if (matchedDistrict) {
               const finalName = `${getName(matchedCity).toLocaleUpperCase('tr-TR')}, ${getName(matchedDistrict)}`;
-              setLocation({ id: getId(matchedDistrict), name: finalName });
-              if (showMessage) Alert.alert("Başarılı", `Konumunuz tespit edildi:\n${finalName}`);
+              const finalLocation = { id: getId(matchedDistrict), name: finalName };
+              
+              // Ekrana yansıt ve HAFIZAYA KAYDET
+              setLocation(finalLocation);
+              await AsyncStorage.setItem('saved_location', JSON.stringify(finalLocation));
+              
+              if (showMessage) Alert.alert("Başarılı", `Konumunuz güncellendi:\n${finalName}`);
             }
-          } else {
-             if (showMessage) Alert.alert("Hata", "İl bulunamadı.");
           }
         }
       }
@@ -92,7 +86,31 @@ export const useAutoLocation = () => {
     }
   };
 
-  useEffect(() => { findMyLocation(false); }, []);
+  useEffect(() => {
+    // UYGULAMA AÇILDIĞINDA ÇALIŞAN KOD
+    const loadInitialLocation = async () => {
+      // 1. Hafızada daha önce kaydedilmiş bir konum var mı bak
+      const saved = await AsyncStorage.getItem('saved_location');
+      if (saved) {
+        setLocation(JSON.parse(saved));
+        setIsLocating(false); // HAFIZADAN BULDUK, EKRANI ANINDA AÇ! (0 Saniye bekleme)
+        
+        // 2. Ekran açıldıktan sonra arka planda sessizce konumu doğrula
+        findMyLocation(false); 
+      } else {
+        // İlk defa yükleyen biri ise mecburen GPS'i bekleteceğiz
+        findMyLocation(false);
+      }
+    };
+    
+    loadInitialLocation();
+  }, []);
 
-  return { location, setLocation, isLocating, findMyLocation };
+  // Kullanıcı Manuel Şehir Seçtiğinde de hafızaya kaydetmemiz lazım
+  const handleSetLocation = async (newLoc) => {
+    setLocation(newLoc);
+    await AsyncStorage.setItem('saved_location', JSON.stringify(newLoc));
+  };
+
+  return { location, setLocation: handleSetLocation, isLocating, findMyLocation };
 };

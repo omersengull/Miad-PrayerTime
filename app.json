@@ -1,8 +1,9 @@
 {
   "expo": {
-    "name": "Miad-PrayerTime",
+    "name": "Miad",
     "slug": "Miad-PrayerTime",
     "version": "1.0.0",
+
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -11,14 +12,38 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#060c17",
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "package": "com.nwklrd.MiadPrayerTime"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "f4fa2c24-64bb-49d5-87ad-7f8661dc70e5"
+      }
+    },
+    "plugins": [
+      "expo-font",
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "MiadWidget",
+              "label": "Miad Namaz Vakitleri",
+              "minWidth": "320dp",
+              "minHeight": "60dp",
+              "targetCellWidth": 5,
+              "targetCellHeight": 1,
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
+      ]
+    ]
   }
 }
