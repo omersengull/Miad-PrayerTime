@@ -65,8 +65,9 @@ git clone https://github.com/omersengull/Miad-PrayerTime.git
 cd Miad-PrayerTime
 
 # Bağımlılıkları yükleyin
-pnpm install` ``` `
-3. Çalıştırma
+pnpm install
+``` 
+### 3. Çalıştırma
 
     Önemli Not: Projede @notifee/react-native, özel MiadNotify Kotlin modülü ve widget gibi Native bileşenler bulunduğu için standart Expo Go uygulamasında çalışmaz. Geliştirme için yerel Android derlemesi (Dev Client) kullanılmalıdır.
 
