@@ -5,15 +5,15 @@ Modern, minimalist ve "Offline-First" (internetsiz çalışabilen) mimariyle tas
 ## 📱 Ekran Görüntüleri
 
 <p align="center">
-  <img src="assets/screenshots/screen-1.png" width="24%" />
-  <img src="assets/screenshots/screen-2.png" width="24%" />
-  <img src="assets/screenshots/screen-3.png" width="24%" />
-  <img src="assets/screenshots/screen-4.png" width="24%" />
+  <img src="assets/screenshots/screen-1.jng" width="24%" />
+  <img src="assets/screenshots/screen-2.jng" width="24%" />
+  <img src="assets/screenshots/screen-3.jng" width="24%" />
+  <img src="assets/screenshots/screen-4.jng" width="24%" />
 </p>
 <p align="center">
-  <img src="assets/screenshots/screen-5.png" width="24%" />
-  <img src="assets/screenshots/screen-6.png" width="24%" />
-  <img src="assets/screenshots/screen-7.png" width="24%" />
+  <img src="assets/screenshots/screen-5.jng" width="24%" />
+  <img src="assets/screenshots/screen-6.jng" width="24%" />
+  <img src="assets/screenshots/screen-7.jng" width="24%" />
 </p>
 
 ## 📥 İndir ve Kur (Kullanıcılar İçin)
