@@ -74,22 +74,141 @@ export async function bildirimKur(vakitAdi, saatString, kacDakikaOnce) {
   });
 }
 
+/**
+ * Aylık ve günlük verileri birleştirerek Native servisin arka planda
+ * kesintisiz çalışması için tam zaman çizelgesini (schedule) oluşturur.
+ */
+export function namazCizelgesiOlustur(monthlyTimes, todayTimesObj) {
+  const schedule = [];
+  const PRAYER_KEYS = [
+    { key: "imsak", label: "İmsak", prevKey: "yatsi" },
+    { key: "gunes", label: "Güneş", prevKey: "imsak" },
+    { key: "ogle", label: "Öğle", prevKey: "gunes" },
+    { key: "ikindi", label: "İkindi", prevKey: "ogle" },
+    { key: "aksam", label: "Akşam", prevKey: "ikindi" },
+    { key: "yatsi", label: "Yatsı", prevKey: "aksam" },
+  ];
 
-export async function sabitBildirimiGuncelle(hedefVakitObjesi, hedefZamanObjesi, gununVakitleri, aktifVakitObjesi) {
+  if (Array.isArray(monthlyTimes) && monthlyTimes.length > 0) {
+    for (const dayData of monthlyTimes) {
+      if (!dayData?.date || !dayData?.times) continue;
+      const dateParts = dayData.date.substring(0, 10).split("-");
+      if (dateParts.length < 3) continue;
+
+      const year = parseInt(dateParts[0], 10);
+      const month = parseInt(dateParts[1], 10) - 1;
+      const day = parseInt(dateParts[2], 10);
+
+      const dayVakitler = {
+        Imsak: dayData.times.imsak || "--:--",
+        Gunes: dayData.times.gunes || "--:--",
+        Ogle: dayData.times.ogle || "--:--",
+        Ikindi: dayData.times.ikindi || "--:--",
+        Aksam: dayData.times.aksam || "--:--",
+        Yatsi: dayData.times.yatsi || "--:--",
+      };
+
+      for (const p of PRAYER_KEYS) {
+        const timeStr = dayData.times[p.key];
+        if (!timeStr || !timeStr.includes(":")) continue;
+        const [h, m] = timeStr.split(":").map((v) => parseInt(v, 10));
+        const dt = new Date(year, month, day, h, m, 0, 0);
+
+        schedule.push({
+          key: p.key,
+          isim: p.label,
+          zaman: dt.getTime(),
+          prevKey: p.prevKey,
+          vakitler: dayVakitler,
+        });
+      }
+    }
+  }
+
+  // Eğer monthlyTimes henüz yüklenmediyse bugünün vakitlerinden bugün ve yarını üret
+  if (schedule.length === 0 && todayTimesObj) {
+    const now = new Date();
+    const gunler = [
+      { offset: 0, times: todayTimesObj },
+      { offset: 1, times: todayTimesObj },
+    ];
+
+    for (const g of gunler) {
+      const d = new Date(now);
+      d.setDate(d.getDate() + g.offset);
+      const year = d.getFullYear();
+      const month = d.getMonth();
+      const day = d.getDate();
+
+      for (const p of PRAYER_KEYS) {
+        const timeStr = g.times[p.label] || g.times[p.key];
+        if (!timeStr || !timeStr.includes(":")) continue;
+        const [h, m] = timeStr.split(":").map((v) => parseInt(v, 10));
+        const dt = new Date(year, month, day, h, m, 0, 0);
+
+        schedule.push({
+          key: p.key,
+          isim: p.label,
+          zaman: dt.getTime(),
+          prevKey: p.prevKey,
+          vakitler: todayTimesObj,
+        });
+      }
+    }
+  }
+
+  // Zamana göre sırala
+  schedule.sort((a, b) => a.zaman - b.zaman);
+
+  // Dünden daha eski olanları çıkar
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  return schedule.filter((s) => s.zaman >= cutoff);
+}
+
+/**
+ * Sabit bildirim ve sayacı günceller / başlatır.
+ */
+export async function sabitBildirimiGuncelle(monthlyTimes, todayTimesObj, aktifVakitKey) {
   if (Platform.OS !== 'android') return;
-
   try {
-    const hedefIsim = hedefVakitObjesi.label;
-    const timestamp = hedefZamanObjesi.getTime();
-    const aktifKey = aktifVakitObjesi ? aktifVakitObjesi.key : 'Yatsi';
+    const ayar = await AsyncStorage.getItem('ayar_sabit_bildirim');
+    if (ayar === 'false') return;
 
-    // Native tarafa yolla
-    MiadNotify.gosterSabitBildirim(hedefIsim, timestamp, gununVakitleri, aktifKey);
-    
+    const schedule = namazCizelgesiOlustur(monthlyTimes, todayTimesObj);
+    const scheduleJSON = JSON.stringify(schedule);
+    const activeKey = aktifVakitKey ? String(aktifVakitKey).toLowerCase() : 'yatsi';
+
+    MiadNotify.gosterSabitBildirim(scheduleJSON, todayTimesObj || {}, activeKey);
   } catch (error) {
-    // EĞER ÇÖKERSE EKRANDA GÖSTERECEK!
     console.log("Sabit bildirim hatası (Native):", error);
-    Alert.alert("Bildirim Motoru Çöktü!", String(error)); 
+  }
+}
+
+/**
+ * Kullanıcı uygulama içinden sabit bildirimi kapattığında foreground servisi durdurur.
+ */
+export async function sabitBildirimiDurdur() {
+  if (Platform.OS !== 'android') return;
+  try {
+    await AsyncStorage.setItem('ayar_sabit_bildirim', 'false');
+    if (MiadNotify.durdurSabitBildirim) {
+      MiadNotify.durdurSabitBildirim();
+    }
+  } catch (error) {
+    console.log("Sabit bildirim durdurma hatası:", error);
+  }
+}
+
+/**
+ * Kullanıcı uygulama içinden sabit bildirimi açtığında servisi yeniden başlatır.
+ */
+export async function sabitBildirimiBaslat(monthlyTimes, todayTimesObj, aktifVakitKey) {
+  if (Platform.OS !== 'android') return;
+  try {
+    await AsyncStorage.setItem('ayar_sabit_bildirim', 'true');
+    await sabitBildirimiGuncelle(monthlyTimes, todayTimesObj, aktifVakitKey);
+  } catch (error) {
+    console.log("Sabit bildirim başlatma hatası:", error);
   }
 }
 

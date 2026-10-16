@@ -1,8 +1,10 @@
 // hooks/usePrayerTimes.js
 import { useState, useEffect } from "react";
+import { AppState } from "react-native";
 import { fetchMonthlyTimes } from "../services/prayerApi";
 import { PRAYERS } from "../constants/prayers";
 import { sabitBildirimiGuncelle } from "../services/notificationEngine";
+
 export const usePrayerTimes = (districtId) => {
   const [times, setTimes] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -25,25 +27,77 @@ export const usePrayerTimes = (districtId) => {
       if (isMounted) setLoading(false);
     };
     init();
+
+    // Uygulama arka plandan (background) öne döndüğünde otomatik veriyi tazele (Ay değişimi için)
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState === "active") {
+        fetchMonthlyTimes(districtId).then((data) => {
+          if (isMounted && data && data.length > 0) setTimes(data);
+        });
+      }
+    });
+
     return () => {
       isMounted = false;
+      subscription.remove();
     };
   }, [districtId]);
+
+  const pad = (n) => String(n).padStart(2, "0");
+
+  const getTodayTimesObj = () => {
+    if (!times) return null;
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+
+    let todayData = times.find((d) => d.date && d.date.startsWith(todayStr));
+
+    // Güvenlik amaçlı fallback
+    if (!todayData) {
+      const dayIndex = now.getDate() - 1;
+      todayData =
+        times.length > dayIndex ? times[dayIndex] : times[times.length - 1];
+    }
+
+    return {
+      Imsak: todayData?.times?.imsak || "--:--",
+      Gunes: todayData?.times?.gunes || "--:--",
+      Ogle: todayData?.times?.ogle || "--:--",
+      Ikindi: todayData?.times?.ikindi || "--:--",
+      Aksam: todayData?.times?.aksam || "--:--",
+      Yatsi: todayData?.times?.yatsi || "--:--",
+    };
+  };
 
   useEffect(() => {
     if (!times || times.length === 0) return;
 
-    // Sabit bildirimi sadece hedef vakit değiştiğinde güncelle (saniyede 1 kez değil).
     const sonGuncellenenHedef = { key: null };
 
     const timer = setInterval(() => {
       const now = new Date();
-      const dayIndex = now.getDate() - 1;
 
-      const todayData =
-        times.length > dayIndex ? times[dayIndex] : times[times.length - 1];
-      const tomorrowData =
-        times.length > dayIndex + 1 ? times[dayIndex + 1] : times[0];
+      const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+      let todayData = times.find((d) => d.date && d.date.startsWith(todayStr));
+
+      if (!todayData) {
+        const dayIndex = now.getDate() - 1;
+        todayData =
+          times.length > dayIndex ? times[dayIndex] : times[times.length - 1];
+      }
+
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const tomorrowStr = `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth() + 1)}-${pad(tomorrow.getDate())}`;
+      let tomorrowData = times.find(
+        (d) => d.date && d.date.startsWith(tomorrowStr),
+      );
+
+      if (!tomorrowData) {
+        const tmrIndex = tomorrow.getDate() - 1;
+        tomorrowData = times.length > tmrIndex ? times[tmrIndex] : times[0];
+      }
 
       if (todayData?.hijri_date?.full_date)
         setHijriDate(todayData.hijri_date.full_date);
@@ -96,19 +150,19 @@ export const usePrayerTimes = (districtId) => {
               0,
             );
           }
-
           break;
         }
       }
 
+      // Gece 12'yi geçmiş ve sonraki günün imsağı bekleniyorsa
       if (!upcomingPrayer) {
         const timeStr = tomorrowData?.times?.imsak || "00:00";
         const [hours, minutes] = timeStr.split(":");
         upcomingPrayer = PRAYERS[0];
         upcomingTimeObj = new Date(
-          now.getFullYear(),
-          now.getMonth(),
-          now.getDate() + 1,
+          tomorrow.getFullYear(),
+          tomorrow.getMonth(),
+          tomorrow.getDate(),
           parseInt(hours, 10),
           parseInt(minutes, 10),
           0,
@@ -145,19 +199,18 @@ export const usePrayerTimes = (districtId) => {
           label: upcomingPrayer.label,
           key: upcomingPrayer.key,
           activeKey: activePrayer?.key,
-          remaining: `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`,
+          remaining: `${pad(h)}:${pad(m)}:${pad(s)}`,
           progress: progressVal,
         });
 
-    
+        // Sabit bildirimleri güncelle
         const hedefAnahtar = `${upcomingPrayer.key}_${upcomingTimeObj.getTime()}`;
         if (sonGuncellenenHedef.key !== hedefAnahtar) {
           sonGuncellenenHedef.key = hedefAnahtar;
           sabitBildirimiGuncelle(
-            upcomingPrayer,
-            upcomingTimeObj,
+            times,
             getTodayTimesObj(),
-            activePrayer,
+            activePrayer?.key || "yatsi",
           );
         }
       }
@@ -165,22 +218,6 @@ export const usePrayerTimes = (districtId) => {
 
     return () => clearInterval(timer);
   }, [times]);
-
-  const getTodayTimesObj = () => {
-    if (!times) return null;
-    const dayIndex = new Date().getDate() - 1;
-    const todayData =
-      times.length > dayIndex ? times[dayIndex] : times[times.length - 1];
-
-    return {
-      Imsak: todayData?.times?.imsak || "--:--",
-      Gunes: todayData?.times?.gunes || "--:--",
-      Ogle: todayData?.times?.ogle || "--:--",
-      Ikindi: todayData?.times?.ikindi || "--:--",
-      Aksam: todayData?.times?.aksam || "--:--",
-      Yatsi: todayData?.times?.yatsi || "--:--",
-    };
-  };
 
   return {
     times: getTodayTimesObj(),

@@ -12,7 +12,6 @@ export const VAKITLER = [
 
 const pad = (n) => String(n).padStart(2, '0');
 
-// Tek seferde şehir + vakitleri okur (aynı AsyncStorage anahtarını iki kez okumamak için).
 export async function getirWidgetVerisi() {
   let sehirAdi = 'İSTANBUL, Fatih';
   let districtId = '9541';
@@ -24,35 +23,64 @@ export async function getirWidgetVerisi() {
       if (parsed?.name) sehirAdi = parsed.name;
       if (parsed?.id) districtId = parsed.id;
     }
-  } catch (e) {
-    // saved_location bozuksa varsayılanlarla devam et, widget'ı çökertme
-  }
+  } catch (e) {}
 
   let vakitler = null;
+  const cacheKey = `prayer_cache_${districtId}`;
+  
+  // Bugünden tarih stringi elde et (Örn: "2026-10-02")
+  const getTodayFromData = (data) => {
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+    return data.find(d => d.date && d.date.startsWith(todayStr));
+  };
+
+  const parseTimes = (todayData) => {
+    if (!todayData?.times) return null;
+    const t = todayData.times;
+    const al = (...keys) => keys.map((k) => t[k]).find((v) => v != null) || null;
+    const v = {
+      imsak: al('imsak', 'Imsak', 'İmsak'),
+      gunes: al('gunes', 'Gunes', 'Güneş'),
+      ogle: al('ogle', 'Ogle', 'Öğle'),
+      ikindi: al('ikindi', 'Ikindi', 'İkindi'),
+      aksam: al('aksam', 'Aksam', 'Akşam'),
+      yatsi: al('yatsi', 'Yatsi', 'Yatsı'),
+    };
+    if (Object.values(v).every((val) => !val)) return null;
+    return v;
+  };
+
   try {
-    const cached = await AsyncStorage.getItem(`prayer_cache_${districtId}`);
+    const cached = await AsyncStorage.getItem(cacheKey);
+    let todayData = null;
+
+    // 1. Önce Cache içinden bugünü bulmayı dene
     if (cached) {
       const data = JSON.parse(cached);
-      if (Array.isArray(data) && data.length > 0) {
-        const dayIndex = new Date().getDate() - 1;
-        const todayData = data[dayIndex] ?? data[data.length - 1];
-        if (todayData?.times) {
-          const t = todayData.times;
-          // Hangi anahtar biçimiyle gelirse gelsin (küçük/büyük harf, Türkçe karakter) yakala
-          const al = (...keys) => keys.map((k) => t[k]).find((v) => v != null) || null;
-          vakitler = {
-            imsak: al('imsak', 'Imsak', 'İmsak'),
-            gunes: al('gunes', 'Gunes', 'Güneş'),
-            ogle: al('ogle', 'Ogle', 'Öğle'),
-            ikindi: al('ikindi', 'Ikindi', 'İkindi'),
-            aksam: al('aksam', 'Aksam', 'Akşam'),
-            yatsi: al('yatsi', 'Yatsi', 'Yatsı'),
-          };
-          // Hiçbir vakit bulunamadıysa null'a geri dön (tamamen boş obje göstermeyelim)
-          if (Object.values(vakitler).every((v) => !v)) vakitler = null;
-        }
+      if (Array.isArray(data)) {
+        todayData = getTodayFromData(data);
       }
     }
+
+    // 2. Cache'de bugün yoksa (Ay değiştiyse vs.) Arka planda yeni ay verisini API'den çek!
+    if (!todayData) {
+      try {
+        const res = await fetch(`https://ezanvakti.imsakiyem.com/api/prayer-times/${districtId}/monthly`);
+        if (res.ok) {
+          const result = await res.json();
+          const newData = Array.isArray(result) ? result : (Array.isArray(result?.data) ? result.data : null);
+          if (newData && newData.length > 0) {
+            await AsyncStorage.setItem(cacheKey, JSON.stringify(newData));
+            todayData = getTodayFromData(newData);
+          }
+        }
+      } catch (e) {
+        console.log("Widget API fetch hatasi:", e);
+      }
+    }
+
+    vakitler = parseTimes(todayData);
   } catch (e) {
     console.log('Widget vakit okuma hatası:', e);
   }
@@ -66,8 +94,6 @@ const dk = (t) => {
   return m ? Number(m[1]) * 60 + Number(m[2]) : null;
 };
 
-// Sadece "şu an" ve "sıradaki" vakti bulur (canlı sayaç YOK — 30dk'da bir
-// yenilenen bir widget'ta dakika hassasiyetinde geri sayım yanıltıcı olur).
 export function hesapla(vakitler, now = new Date()) {
   if (!vakitler) return {};
   const nowMin = now.getHours() * 60 + now.getMinutes();
